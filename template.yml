@@ -1,0 +1,299 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Setup AWS CI/CD resources
+Parameters:
+  TargetWorkspaceId:
+    Type: String
+  TargetChannelId:
+    Type: String
+
+Resources:
+  # ------------------------------------
+  # SNS Topic
+  # ------------------------------------
+  CodeCommitPullRequestForChatbotTopic:
+    Type: AWS::SNS::Topic
+    Properties: 
+      DisplayName: codecommit-pullrequest-for-chabot-topic
+
+  # ------------------------------------
+  # AWS Chatbot
+  # ------------------------------------
+  ChatbotRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: codecommit-pullrequest-chatbot-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: chatbot.amazonaws.com
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: codecommit-pullrequest-chatbot-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codecommit:Describe*
+                  - cloudwatch:Get*
+                  - cloudwatch:List*
+                Resource:
+                  - "*"
+
+  CodeCommitPullRequestChatbot:
+    Type: AWS::Chatbot::SlackChannelConfiguration
+    Properties: 
+      ConfigurationName: CodeCommitPullRequestSampleChatbotConfiguration
+      IamRoleArn: !GetAtt ChatbotRole.Arn
+      SlackChannelId: !Ref TargetChannelId
+      SlackWorkspaceId: !Ref TargetWorkspaceId
+      SnsTopicArns: 
+        - !Ref CodeCommitPullRequestForChatbotTopic
+
+  # ------------------------------------
+  # AWS CodeCommit
+  # ------------------------------------
+  CodeCommitPullRequestSampleRepository:
+    Type: AWS::CodeCommit::Repository
+    Properties: 
+      RepositoryDescription: This repository contains sample code that tested in CodeBuild project.
+      RepositoryName: codecommit-pullrequest-sample-repository
+      # Using triggers is not working with aws chatbot. You should use CodeStarNotifications.
+      # Triggers:
+      #   - Name: MainTrigger
+      #     DestinationArn:
+      #       !Ref CodeCommitPullRequestForChatbotTopic
+      #     Events:
+      #     - all
+
+  CodeCommitPullRequestCodeStarNotifications:
+    Type: AWS::CodeStarNotifications::NotificationRule
+    Properties: 
+      DetailType: FULL
+      EventTypeIds: 
+        - codecommit-repository-comments-on-commits
+        - codecommit-repository-comments-on-pull-requests
+        - codecommit-repository-approvals-status-changed
+        - codecommit-repository-approvals-rule-override
+        - codecommit-repository-pull-request-created
+        - codecommit-repository-pull-request-source-updated
+        - codecommit-repository-pull-request-status-changed
+        - codecommit-repository-pull-request-merged
+        - codecommit-repository-branches-and-tags-created
+        - codecommit-repository-branches-and-tags-deleted
+        - codecommit-repository-branches-and-tags-updated
+      Name: codecommit-pullrequests-codestar-notification-rule
+      Resource: 
+        !GetAtt CodeCommitPullRequestSampleRepository.Arn
+      Targets: 
+        - TargetType: AWSChatbotSlack
+          TargetAddress: 
+            !GetAtt CodeCommitPullRequestChatbot.Arn
+
+  # ------------------------------------
+  # AWS CodeBuild
+  # ------------------------------------
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: codecommit-pullrequest-codebuild-execute-role
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Resource: "*"
+                Effect: Allow
+                Action:
+                  - codecommit:*
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+              - Resource: "*"
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:GetObjectVersion
+
+  CodeBuildProjectPullRequest:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: NO_ARTIFACTS
+      BadgeEnabled: true
+      Description: This build project is triggered on create or update pull request in AWS CodeCommit.
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0-20.08.14
+        Type: LINUX_CONTAINER
+      Name: codecommit-pullrequests-codebuild-project
+      ServiceRole: 
+        !Ref CodeBuildServiceRole
+      Source:
+        Type: CODECOMMIT
+        Location: !GetAtt CodeCommitPullRequestSampleRepository.CloneUrlHttp
+      SourceVersion: refs/heads/develop
+
+  CodeBuildCodeStarNotifications:
+    Type: AWS::CodeStarNotifications::NotificationRule
+    Properties: 
+      DetailType: FULL
+      EventTypeIds: 
+        - codebuild-project-build-state-failed
+        - codebuild-project-build-state-succeeded
+        - codebuild-project-build-state-in-progress
+        - codebuild-project-build-state-stopped
+
+        - codebuild-project-build-phase-failure
+        - codebuild-project-build-phase-success
+      Name: codebuild-codestar-notification-rule
+      Resource: 
+        !GetAtt CodeBuildProjectPullRequest.Arn
+      Targets: 
+        - TargetType: AWSChatbotSlack
+          TargetAddress: 
+            !GetAtt CodeCommitPullRequestChatbot.Arn
+    
+  # ------------------------------------
+  # Lambda
+  # ------------------------------------
+  LambdaManagedPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      Description: "Lambda policy that allows post comments in pull requests on CodeCommit."
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "codebuild:*"
+              - "codecommit:*"
+              - "logs:CreateLogGroup"
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+              - "logs:GetLogEvents"
+              - "xray:*"
+            Resource: "*"
+  LambdaRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Description: "Lambda role that allows post comments in pull requests on CodeCommit."
+      RoleName: codecommit-pullrequest-lambda-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - !Ref "LambdaManagedPolicy"
+  CommentBuildStatusToPullRequest:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/comment-build-status-to-pull-request/
+      Handler: main
+      Runtime: go1.x
+      FunctionName: "comment-build-status-to-pull-request"
+      Description: "Comment build badge url to pullrequest."
+      Tracing: Active
+      Environment:
+        Variables:
+          CODEBUILD_ARN: 
+            !GetAtt CodeBuildProjectPullRequest.Arn
+      Role:
+        !GetAtt LambdaRole.Arn
+      Events:
+        OnPullRequestEvent:
+          Type: EventBridgeRule
+          Properties:
+            Pattern: 
+              source: 
+                - "aws.codecommit"
+              detail-type: 
+                - "CodeCommit Pull Request State Change"
+              detail: 
+                event: 
+                  - "pullRequestCreated"
+                  - "pullRequestSourceBranchUpdated"
+                pullRequestStatus: 
+                  - "Open"
+                sourceReference:
+                  - "refs/heads/develop"
+                destinationReference:
+                  - "refs/heads/master"
+              resources: 
+                - !GetAtt CodeCommitPullRequestSampleRepository.Arn
+  
+  # ------------------------------------
+  # CloudWatch Event Rule
+  # ------------------------------------
+  OnPullRequestEventRuleManagedPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      Description: "CloudWatch Event policy that allows invoking lambda functions and starting CodeBuild projects."
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "codebuild:*"
+              - "lambda:*"
+            Resource: "*"
+  OnPullRequestEventRuleRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Description: "CloudWatch Event role that allows invoking lambda functions and starting CodeBuild projects."
+      RoleName: codecommit-pullrequest-cloudwatch-event-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "events.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - !Ref OnPullRequestEventRuleManagedPolicy
+
+  OnPullRequestEventRule: 
+    Type: AWS::Events::Rule
+    Properties: 
+      Description: "Trigger CodeBuild project and lambda function on PR's in CodeCommit."
+      EventPattern: 
+        source: 
+          - "aws.codecommit"
+        detail-type: 
+          - "CodeCommit Pull Request State Change"
+        detail: 
+          event: 
+            - "pullRequestCreated"
+            - "pullRequestSourceBranchUpdated"
+          pullRequestStatus: 
+            - "Open"
+          sourceReference:
+            - "refs/heads/develop"
+          destinationReference:
+            - "refs/heads/master"
+        resources: 
+          - !GetAtt CodeCommitPullRequestSampleRepository.Arn
+      State: "ENABLED"
+      Targets: 
+        - 
+          Arn: !GetAtt CodeBuildProjectPullRequest.Arn
+          Id: CodeBuildProject
+          RoleArn: !GetAtt OnPullRequestEventRuleRole.Arn
