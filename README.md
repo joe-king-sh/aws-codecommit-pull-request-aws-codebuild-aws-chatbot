@@ -1,7 +1,3 @@
----
-marp: false
----
-
 # aws-codecommit-pull-request-aws-codebuild-aws-chatbot
 This repository contains sample code that tests pull requests created in AWS CodeCommit with CodeBuild and notifies to Slack using AWS Chatbot.
 
