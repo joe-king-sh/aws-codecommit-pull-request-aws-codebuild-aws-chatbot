@@ -16,3 +16,4 @@
 
 main
 .aws-sam
+samconfig.toml

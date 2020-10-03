@@ -15,31 +15,31 @@ XXXXXXXX
 ### Prerequisites
  - macOS Catalina 10.15.6
  - go version go1.15.2 darwin/amd64
+ - aws-cli/2.0.17
  - SAM CLI, version 1.2.0
  - Slack 4.8.0
 
-### Installing
-なければとばす
+Before you get started, make sure you've completed the tasks that Create new chatbot client.
+
+<img width="60%" alt="chatbot_client_setting1" src="./doc/new_aws_chatbot_client.png">
+
+<img width="60%" alt="hatbot_client_setting2" src="./doc/new_chatbot_client_slack.png">
+
+<img width="60%" alt="hatbot_client_setting3" src="./doc/aws-chatbot-integration.png">
+
+### Build
+```
+$ make
+```
 
 ### Deployment
-#### 手動でやるchatbotとか
-#### sam deployで方をつけたい
 ```
-sam deploy -t template.yml --guided
+$ sam deploy --guided --capabilities CAPABILITY_NAMED_IAM
 ```
-最初は失敗する reason for CAPABILITY_NAMED_IAM 
-
-```bash
-sam deploy -t template.yml --capabilities CAPABILITY_NAMED_IAM
-
-sam deploy -t template.yml --capabilities CAPABILITY_NAMED_IAM \
---parameter-overrides TargetWorkspaceId=T01B0FE4QM8 TargetChannelId=C01B658TYTZ
-```
-
-GOOS=linux go build main.go makeでこいつらできるように
 
 
 ### Reference
+[Getting started with AWS Chatbot](https://docs.aws.amazon.com/chatbot/latest/adminguide/getting-started.html)
 
 [Validating AWS CodeCommit Pull Requests with AWS CodeBuild and AWS Lambda](https://aws.amazon.com/jp/blogs/devops/validating-aws-codecommit-pull-requests-with-aws-codebuild-and-aws-lambda/)
 
