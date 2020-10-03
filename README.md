@@ -34,11 +34,11 @@ $ sam deploy --guided --capabilities CAPABILITY_NAMED_IAM
 ```
 
 
-### Reference
+## Reference
 [Getting started with AWS Chatbot](https://docs.aws.amazon.com/chatbot/latest/adminguide/getting-started.html)
 
 [Validating AWS CodeCommit Pull Requests with AWS CodeBuild and AWS Lambda](https://aws.amazon.com/jp/blogs/devops/validating-aws-codecommit-pull-requests-with-aws-codebuild-and-aws-lambda/)
 
-### Link
+## Link
 Qiita URL
 
