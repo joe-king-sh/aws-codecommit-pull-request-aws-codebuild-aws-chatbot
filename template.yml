@@ -1,6 +1,20 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Setup AWS CI/CD resources
+Description: Setup AWS CI resources that tests pull requests created in AWS CodeCommit with CodeBuild and notifies to Slack using AWS Chatbot.
+
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: tests-pullrequest-in-codecommit-using-codebuild-and-notify-slack
+    Description: This repository contains sample code that tests pull requests created in AWS CodeCommit with CodeBuild and notifies to Slack using AWS Chatbot.
+    Author: joe-king-sh
+    SpdxLicenseId: AML
+    LicenseUrl: LICENSE
+    ReadmeUrl: README.md
+    Labels: ['codecommit','codebuild','awschatbot','slack','lambda','ci','eventbridge']
+    HomePageUrl: https://github.com/joe-king-sh/aws-codecommit-pull-request-aws-codebuild-aws-chatbot
+    SemanticVersion: 0.0.1
+    SourceCodeUrl: https://github.com/joe-king-sh/aws-codecommit-pull-request-aws-codebuild-aws-chatbot
+
 Parameters:
   TargetWorkspaceId:
     Type: String

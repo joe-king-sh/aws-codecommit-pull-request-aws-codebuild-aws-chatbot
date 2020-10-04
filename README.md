@@ -2,7 +2,7 @@
 This repository contains sample code that tests pull requests created in AWS CodeCommit with CodeBuild and notifies to Slack using AWS Chatbot.
 
 referenced in the qiita post:
-XXXXXXXX
+[CodeCommitのプルリクをCodeBuildで検証しAWS ChatbotでSlack通知する](https://qiita.com/joe-king-sh/items/d896ec66a93212e92147)
 
 ![Architecture](./doc/architecture.drawio.svg)
 
@@ -33,12 +33,18 @@ $ make
 $ sam deploy --guided --capabilities CAPABILITY_NAMED_IAM
 ```
 
+You can also deploy using [this Serverless Application Repository](https://ap-northeast-1.console.aws.amazon.com/lambda/home?region=ap-northeast-1#/create/app?applicationId=arn:aws:serverlessrepo:ap-northeast-1:757523705531:applications/tests-pullrequest-in-codecommit-using-codebuild-and-notify-slack).
+<img width="60%" alt="deploy_using_sam_repository" src="./doc/deploy_using_sam_repository.png">
+
 
 ## Reference
-[Getting started with AWS Chatbot](https://docs.aws.amazon.com/chatbot/latest/adminguide/getting-started.html)
+- [Getting started with AWS Chatbot](https://docs.aws.amazon.com/chatbot/latest/adminguide/getting-started.html)
 
-[Validating AWS CodeCommit Pull Requests with AWS CodeBuild and AWS Lambda](https://aws.amazon.com/jp/blogs/devops/validating-aws-codecommit-pull-requests-with-aws-codebuild-and-aws-lambda/)
+- [Validating AWS CodeCommit Pull Requests with AWS CodeBuild and AWS Lambda](https://aws.amazon.com/jp/blogs/devops/validating-aws-codecommit-pull-requests-with-aws-codebuild-and-aws-lambda/)
 
 ## Link
-Qiita URL
+- Qiita
+  - [CodeCommitのプルリクをCodeBuildで検証しAWS ChatbotでSlack通知する](https://qiita.com/joe-king-sh/items/d896ec66a93212e92147)
 
+- ServerlessApplicationRepository 
+  - [ tests-pullrequest-in-codecommit-using-codebuild-and-notify-slack](https://ap-northeast-1.console.aws.amazon.com/lambda/home?region=ap-northeast-1#/create/app?applicationId=arn:aws:serverlessrepo:ap-northeast-1:757523705531:applications/tests-pullrequest-in-codecommit-using-codebuild-and-notify-slack) 
