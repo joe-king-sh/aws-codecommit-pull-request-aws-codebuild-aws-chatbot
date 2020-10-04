@@ -2,7 +2,7 @@
 This repository contains sample code that tests pull requests created in AWS CodeCommit with CodeBuild and notifies to Slack using AWS Chatbot.
 
 referenced in the qiita post:
-[CodeCommitのプルリクをCodeBuildで検証しAWS ChatbotでSlack通知する](https://qiita.com/joe-king-sh/items/d896ec66a93212e92147)
+[CodeCommitのプルリクをCodeBuildで検証しAWS ChatbotでSlack通知する](https://qiita.com/joe-king-sh/items/d896ec66a93212e92147)
 
 ![Architecture](./doc/architecture.drawio.svg)
 
